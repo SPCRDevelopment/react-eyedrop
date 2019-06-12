@@ -70,25 +70,25 @@ export default class EyeDropper extends React.Component<Props, {}> {
     const { target } = e
     const { pickRadius } = this.props
 
+    // this prevents issues in Chrome, where scrolling while rendering affects the offset
+    const { offsetX, offsetY } = e;
+
     html2canvas(target, { logging: false })
     .then((canvas) => {
       if (pickRadius) {
-        this.extractColors(canvas, e)
+        this.extractColors(canvas, offsetX, offsetY)
       } else {
-        this.extractColor(canvas, e)
+        this.extractColor(canvas, offsetX, offsetY)
       }
     })
   }
 
-  extractColor = (canvas: *, e: *) => {
-    const { offsetX, offsetY } = e
-
+  extractColor = (canvas: *, offsetX, offsetY) => {
     const colors = getCanvasPixelColor(canvas, offsetX, offsetY)
     this.setColors(colors)
   }
 
-  extractColors = (canvas: *, e: *) => {
-    const { offsetX, offsetY } = e
+  extractColors = (canvas: *, offsetX, offsetY) => {
     const { unit, amount } = this.props.pickRadius
 
     let maxRadius, minRadius
