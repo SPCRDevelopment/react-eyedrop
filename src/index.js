@@ -29,6 +29,7 @@ type Props = {
   cursorInactive?: string,
   onInit?: Function,
   onPickStart?: Function,
+  onPickClick?:Function,
   onPickEnd?: Function,
   passThrough?: string,
   pickRadius?: { unit: 'pixel' | 'radius', amount: number }
@@ -68,7 +69,7 @@ export default class EyeDropper extends React.Component<Props, {}> {
 
   targetToCanvas = (e: *) => {
     const { target } = e
-    const { pickRadius } = this.props
+    const { onPickClick, pickRadius } = this.props
 
     // this prevents issues in Chrome, where scrolling while rendering affects the offset
     const { offsetX, offsetY } = e;
@@ -81,6 +82,8 @@ export default class EyeDropper extends React.Component<Props, {}> {
         this.extractColor(canvas, offsetX, offsetY)
       }
     })
+
+    if (onPickClick) { onPickClick() }
   }
 
   extractColor = (canvas: *, offsetX, offsetY) => {
