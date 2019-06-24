@@ -24,12 +24,13 @@ type Props = {
   wrapperClasses?: string,
   buttonClasses?: string,
   customComponent?: Node,
-  once?: boolean,
   cursorActive?: string,
   cursorInactive?: string,
   onInit?: Function,
   onPickStart?: Function,
   onPickClick?:Function,
+  onPickStop?: Function,
+  onPickCancel?: Function,
   onPickEnd?: Function,
   passThrough?: string,
   pickRadius?: { unit: 'pixel' | 'radius', amount: number }
@@ -48,23 +49,53 @@ export default class EyeDropper extends React.Component<Props, {}> {
     this.state = {
       colors: { rgb: '', hex: '' }
     }
-    this.once = (props.once !== undefined) ? props.once : true
     this.cursorActive = props.cursorActive ? props.cursorActive : 'copy'
     this.cursorInactive = props.cursorInactive ? props.cursorInactive : 'auto'
+    this.picking = false
   }
 
   componentDidMount() {
     const { onInit } = this.props
     if (onInit) { onInit() }
   }
+  componentWillUnmount () {
+    document.removeEventListener('keypress', this.handleKeydown)
+  }
 
   pickColor = () => {
     const { onPickStart } = this.props
-    const { once, cursorActive } = this
+    const { cursorActive } = this
 
     if (onPickStart) { onPickStart() }
     document.body.style.cursor = cursorActive
-    document.addEventListener('click', this.targetToCanvas, { once })
+    document.addEventListener('click', this.targetToCanvas)
+    document.addEventListener('keydown', this.handleKeydown)
+    this.picking = true
+  }
+
+  handleKeydown = (e: *) => {
+    if (e.key === 'Escape') {
+      this.cancelPick()
+    }
+  }
+
+  cancelPick = () => {
+    if (this.picking) {
+      const { onPickCancel } = this.props
+      if (onPickCancel) {
+        onPickCancel()
+      }
+      this.stopPicking()
+    }
+  }
+
+  stopPicking = () => {
+    const { onPickStop } = this.props
+    document.removeEventListener('click', this.targetToCanvas)
+    document.removeEventListener('keydown', this.handleKeydown)
+    document.body.style.cursor = this.cursorInactive
+    if (onPickStop) { onPickStop() }
+    this.picking = false
   }
 
   targetToCanvas = (e: *) => {
@@ -72,7 +103,7 @@ export default class EyeDropper extends React.Component<Props, {}> {
     const { onPickClick, pickRadius } = this.props
 
     // this prevents issues in Chrome, where scrolling while rendering affects the offset
-    const { offsetX, offsetY } = e;
+    const { offsetX, offsetY } = e
 
     html2canvas(target, { logging: false })
     .then((canvas) => {
@@ -84,6 +115,8 @@ export default class EyeDropper extends React.Component<Props, {}> {
     })
 
     if (onPickClick) { onPickClick() }
+
+    this.stopPicking()
   }
 
   extractColor = (canvas: *, offsetX, offsetY) => {
@@ -144,12 +177,10 @@ export default class EyeDropper extends React.Component<Props, {}> {
   }
 
   setColors = ({ r, g, b }) => {
-    const { cursorInactive } = this
     const { onPickEnd, passThrough } = this.props
     const rgb = `rgb(${r}, ${b}, ${g})`
     const hex = rgbToHex(r, b, g)
 
-    document.body.style.cursor = cursorInactive
     if (passThrough) { this.setState({ colors: { rgb, hex } }) }
     this.props.onChange({ rgb, hex })
     if (onPickEnd) { onPickEnd() }
