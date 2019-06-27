@@ -81,11 +81,15 @@ export default class EyeDropper extends React.Component<Props, {}> {
 
   cancelPick = () => {
     if (this.picking) {
-      const { onPickCancel } = this.props
+      const { onPickCancel, onPickEnd } = this.props
       if (onPickCancel) {
         onPickCancel()
       }
       this.stopPicking()
+      if (onPickEnd) {
+        // called in a timeout to ensure it is onPickEnd is always called in a separate execution stack
+        setTimeout(() => { onPickEnd(); }, 0);
+      }
     }
   }
 
